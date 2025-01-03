@@ -21,7 +21,7 @@ enum{
     VOIDPTRSIZE = sizeof(void*),
 };
 
-Vector vec_init(
+Vector vec_init_(
         u64 element_size,
         u64 def_capa,
         vec_err* __restrict const err
@@ -99,7 +99,7 @@ static inline void in_vec_destroy(Vector v, vec_err* __restrict const err ){
     *err = no_err;
 }
 
-void vec_push(
+void vec_push_(
     Vector v,
     const void* const element,
     vec_err* __restrict const err
@@ -163,15 +163,15 @@ void vec_dbg(
         return;
     }
     if ( v -> length == 0 ) {
-        printf("[]\n");
+        printf("<>\n");
         return;
     }
-    printf("[");
+    printf("<");
     int* content = (int*)v->array;
     for ( u64 i = 0; i < v -> length-1; i++ ){
         printf("%d, ", content[i]);
     }
-    printf("%d]", content[v->length-1]);
+    printf("%d>", content[v->length-1]);
 }
 
 u64 vec_len(__restrict const cVector v, vec_err* __restrict const err){
@@ -191,7 +191,7 @@ u64 vec_cap(__restrict const cVector v, vec_err* __restrict const err){
     return v -> capacity;
 }
 
-void* vec_pop(cVector const v, vec_err* __restrict err){
+void* vec_pop_(cVector const v, vec_err* __restrict err){
     if ( v == NULL ){
         *err = null_vec_err;
         return NULL;
@@ -218,7 +218,7 @@ void* vec_pop(cVector const v, vec_err* __restrict err){
     return out;
 }
 
-void vec_insert(
+void vec_insert_(
         Vector v,
         const void* const element,
         u64 index,
@@ -261,7 +261,7 @@ void vec_insert(
     *err = no_err;
 }
 
-void* vec_remove(
+void* vec_remove_(
         cVector const v,
         const u64 index,
         vec_err* __restrict err
@@ -302,7 +302,7 @@ void* vec_remove(
     return out;
 }
 
-void* vec_get(
+void* vec_get_(
         __restrict const cVector v,
         const u64 index,
         vec_err* __restrict const err
@@ -373,7 +373,7 @@ static inline void* in_vec_get(
     return out;
 }
 
-void* vec_first(
+void* vec_first_(
         __restrict const cVector v,
         vec_err* __restrict const err
         ){
@@ -384,7 +384,7 @@ void* vec_first(
     return in_vec_get(v, 0, err);
 }
 
-void* vec_last(
+void* vec_last_(
         __restrict const cVector v,
         vec_err* __restrict const err
         ){
@@ -395,7 +395,8 @@ void* vec_last(
     return in_vec_get(v, v->length-1, err);
 }
 
-Vector vec_map(
+Vector vec_map_(
+        const u64 out_element_size,
         __restrict const cVector v,
         const void*(* const function)(void*),
         vec_err* __restrict const err
@@ -404,7 +405,7 @@ Vector vec_map(
         *err = null_vec_err;
         return NULL;
     }
-    Vector out = in_vec_init(v -> element_size, v -> length, err);
+    Vector out = in_vec_init(out_element_size, v -> length, err);
     if ( *err != no_err ){
         return NULL;
     }
@@ -496,7 +497,7 @@ Vector vec_subvec(
         *err = illegal_acces_err;
         return NULL;
     }
-    Vector out = vec_init(
+    Vector out = in_vec_init(
             v -> element_size,
             e > b ? e - b : b - e,
             err
@@ -625,7 +626,7 @@ static void quick_sort(
 }
 
 
-Vector vec_sort(
+Vector vec_sort_(
         __restrict const cVector v,
         const CmpState(* const cmp)(
             const void* const,
@@ -638,7 +639,7 @@ Vector vec_sort(
         return NULL;
     }
 
-    Vector out = vec_init(v -> element_size, v -> length, err);
+    Vector out = in_vec_init(v -> element_size, v -> length, err);
     if ( *err != no_err ) return NULL;
     
     if ( v -> length == 0 )
@@ -682,4 +683,30 @@ void vec_panic(const vec_err err){
             handle_err("Unkown Error!");
     }
 #undef handle_err
+}
+
+
+void vec_print_(
+        const cVector __restrict v,
+        void (* const printer)(const void* const) 
+        ){
+    if ( v == NULL ) {
+        fprintf(stdout, "(nullvec)\n");
+        return;
+    }
+    if ( v -> array == NULL ){
+        fprintf(stderr, "(error)\n");
+        return;
+    }
+    if ( v -> length == 0 ) {
+        printf("< >\n");
+        return;
+    }
+    printf("<");
+    for ( u64 i = 0; i < v -> length-1; i++ ){
+        printer(v -> array + i * v -> element_size);
+        printf(", ");
+    }
+    printer(v -> array + v -> element_size * ( v -> length - 1 ));
+    printf(">");
 }
